@@ -94,7 +94,7 @@ Generate a secure public URL that tunnels directly to your local server. Share w
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/port-pilot.git
+git clone https://github.com/anjggti-eng/port-pilot.git
 
 # Navigate to the project
 cd port-pilot
