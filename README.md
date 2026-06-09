@@ -467,6 +467,6 @@ MIT License. Use freely in personal and commercial projects.
 
 ## Author
 
-Built with care for developers who live in the terminal.
+Built with care by **William John** from **Orbitan**.
 
 **Port-Pilot** — Because managing local services shouldn't be harder than writing the code itself.
