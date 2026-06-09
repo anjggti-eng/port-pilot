@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/screenshot.png" alt="Port-Pilot Screenshot" width="700"/>
-</p>
-
 <h1 align="center">⚓ Port-Pilot v2.0</h1>
 
 <p align="center">
@@ -15,6 +11,29 @@
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey" alt="Platform"/>
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="License"/>
 </p>
+
+---
+
+## Preview
+
+```
+  ╔══════════════════════════════════════════════════════════════╗
+  ║              ⚓  PORT-PILOT v2.0                            ║
+  ║     The Ultimate Developer Swiss-Army Knife                 ║
+  ╚══════════════════════════════════════════════════════════════╝
+
+  Platform: win32 | Node: v24.11.1 | Dir: C:\Projects\my-app
+
+  📦 Current Project: my-app (NODE)
+  ⚡ Framework: Next.js
+
+? What would you like to do? (Use arrow keys)
+> 🚀 Workspace Launcher (Detect + Launch + Manage)
+  🔍 Port Manager (Scan / Kill / Sniffer / Tunnel)
+  🛡️  Environment Auditor (Check .env & Security)
+  📊 Dashboard Mode (htop-style full screen)
+  ❌ Exit
+```
 
 ---
 
