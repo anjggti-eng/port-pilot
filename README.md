@@ -1,8 +1,8 @@
-# ⚓ Port-Pilot
+# ⚓ Port-Pilot v2.0
 
-**Local Port Manager, HTTP Sniffer & Public Tunnel — All in One CLI**
+**The Ultimate Developer Swiss-Army Knife**
 
-Port-Pilot is a powerful command-line tool that gives you full control over your local development environment. Map running services, inspect HTTP traffic, and expose your local server to the internet — without leaving the terminal.
+Port-Pilot is a powerful command-line tool that gives you full control over your local development environment. Launch projects, manage ports, inspect HTTP traffic, audit environment security, and expose your local server to the internet — all from one tool.
 
 ![Port-Pilot Screenshot](assets/screenshot.png)
 
@@ -12,18 +12,42 @@ Port-Pilot is a powerful command-line tool that gives you full control over your
 
 Every developer knows the pain:
 
-- You have 10 terminals open, each running a different service
-- A port (3000, 5432, 8080) is stuck and you can't restart your app
+- You just cloned a repo but the port is already occupied by an old process
 - You need to debug an API but don't want to open Postman or Wireshark
 - A client wants to see your local project, but you can't deploy it yet
+- You forgot to add a variable to your `.env` and the app crashes in production
+- You have 10 terminals open, each running a different service
 
-**Port-Pilot solves all three problems in a single tool.**
+**Port-Pilot solves all five problems in a single tool.**
 
 ---
 
 ## Features
 
-### 1. Port Scanner & Process Manager
+### 1. Smart Workspace Launcher
+
+Auto-detects your project type and launches it intelligently.
+
+```
+  ⚡ SMART WORKSPACE LAUNCHER
+
+  📦 Detected: NODE
+  ⚡ Framework: Next.js
+  🔌 Default Port: 3000
+  🐳 Docker: Yes
+  🔑 .env: Found
+
+  🚀 Launching: npm run dev
+```
+
+**What it does:**
+- Detects project type: Node, Python, Docker, Go, Rust
+- Identifies framework: React, Next.js, Vue, Angular, Express, Django, Flask
+- Checks for Docker Compose and starts containers automatically
+- Scans for port conflicts and kills stuck processes before launch
+- Runs the appropriate dev command with live log streaming
+
+### 2. Port Scanner & Process Manager
 
 Scan all listening ports on your system, identify which process owns each port, and kill stuck processes with one keystroke.
 
@@ -40,7 +64,7 @@ Scan all listening ports on your system, identify which process owns each port, 
 - **Linux**: `ss -tlnp` (fallback to `lsof`)
 - **macOS**: `lsof -iTCP -sTCP:LISTEN`
 
-### 2. HTTP Traffic Sniffer
+### 3. HTTP Traffic Sniffer
 
 Spin up a transparent reverse proxy that intercepts and displays all HTTP traffic in real-time. No code changes needed.
 
@@ -69,7 +93,7 @@ Spin up a transparent reverse proxy that intercepts and displays all HTTP traffi
 - Response status code with timing
 - Live stats (requests, bytes, uptime)
 
-### 3. Public Tunnel (Ngrok Alternative)
+### 4. Public Tunnel (Ngrok Alternative)
 
 Generate a secure public URL that tunnels directly to your local server. Share with clients, test webhooks, or access from your phone.
 
@@ -87,6 +111,38 @@ Generate a secure public URL that tunnels directly to your local server. Share w
 - Test Stripe/WhatsApp webhooks on localhost
 - Access your dev server from mobile devices
 - Quick API sharing for integration testing
+
+### 5. Environment Auditor
+
+Check your `.env` configuration and security before deploying.
+
+```
+  🛡️  PORT-PILOT ENVIRONMENT AUDITOR v1.0
+
+  1. Git Protection Check
+  ✅ .env is protected in .gitignore
+
+  2. Environment File Analysis
+  ✅ .env found (12 variables, 24 lines)
+  ⚠️  Sensitive keys detected (3):
+     • DATABASE_URL
+     • JWT_SECRET
+     • API_KEY
+
+  3. Sync Check (.env vs .env.example)
+  Missing in .env:
+     - SMTP_HOST
+     - SMTP_PORT
+
+  ENVIRONMENT STATUS: 1 ISSUE(S), 1 WARNING(S)
+```
+
+**What it checks:**
+- `.env` protection in `.gitignore`
+- Missing or empty variables
+- Sensitive keys exposure
+- Sync between `.env` and `.env.example`
+- Common variable presence
 
 ---
 
@@ -118,26 +174,36 @@ After `npm link`, you can use `pp` from anywhere in your terminal.
 pp
 ```
 
-This launches the interactive panel where you can:
-1. See all listening ports
-2. Navigate with arrow keys
-3. Select a port to manage
-4. Choose an action (Sniffer, Tunnel, Kill, Logs, etc.)
+This launches the main menu with 4 options:
+1. **Workspace Launcher** — Detect and launch your project
+2. **Port Manager** — Scan, kill, sniff, and tunnel ports
+3. **Environment Auditor** — Check .env security
+4. **Dashboard Mode** — htop-style full screen
 
 ### CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `pp` | Interactive menu (default) |
+| `pp` | Interactive main menu |
+| `pp launch` | Smart workspace launcher |
 | `pp list` | List all listening ports |
 | `pp kill <PID>` | Kill a process gracefully (SIGTERM) |
 | `pp kill <PID> -f` | Force kill (SIGKILL + tree kill) |
 | `pp sniff <PORT>` | Start HTTP traffic sniffer |
 | `pp tunnel <PORT>` | Generate public shareable URL |
+| `pp audit` | Audit .env and security |
 | `pp scan` | JSON output of all ports |
+| `pp dashboard` | htop-style dashboard |
 | `pp help` | Show help |
 
 ### Examples
+
+**Launch a project:**
+```bash
+cd my-project
+pp launch
+# Auto-detects Node/Python/Docker, cleans ports, starts dev server
+```
 
 **List all ports:**
 ```bash
@@ -160,6 +226,12 @@ pp sniff 3000
 ```bash
 pp tunnel 3000
 # Use the generated URL to share with anyone
+```
+
+**Audit environment:**
+```bash
+pp audit
+# Checks .env security and sync
 ```
 
 ---
@@ -194,12 +266,14 @@ port-pilot/
 ├── assets/
 │   └── screenshot.png    # Tool screenshot
 └── src/
-    ├── index.js          # Main entry point + CLI commands
+    ├── index.js          # Main entry + CLI commands + menus
     ├── port-scanner.js   # Cross-platform port detection
     ├── smart-kill.js     # Process termination with tree-kill
     ├── log-streamer.js   # Live log streaming per PID
     ├── sniffer.js        # HTTP reverse proxy sniffer
     ├── tunnel.js         # Public tunnel via localtunnel
+    ├── workspace.js      # Smart project launcher
+    ├── auditor.js        # Environment auditor
     └── ui.js             # Blessed htop-style dashboard
 ```
 
@@ -215,7 +289,8 @@ port-pilot/
 | `tree-kill` | Kill process trees |
 | `http-proxy` | HTTP reverse proxy (sniffer) |
 | `localtunnel` | Public tunnel generation |
-| `command-exists` | Check if commands exist |
+| `dotenv` | Environment variable parsing |
+| `package-json-path` | Package.json utilities |
 
 ---
 
@@ -224,16 +299,20 @@ port-pilot/
 - **Node.js** 14+ (tested on v24)
 - **npm** 6+
 - **Windows**, **Linux**, or **macOS**
+- **Docker** (optional, for Docker projects)
 
 ---
 
 ## Roadmap
 
-- [ ] Docker container detection and management
+- [x] Smart Workspace Launcher
+- [x] Environment Auditor
+- [x] HTTP Traffic Sniffer
+- [x] Public Tunnel
+- [x] Cross-platform support
 - [ ] WebSocket traffic inspection
 - [ ] Request/response body filtering
 - [ ] Persistent tunnel URLs (custom subdomains)
-- [ ] Port conflict detection and auto-resolve
 - [ ] Process memory/CPU monitoring dashboard
 - [ ] Export traffic logs to file
 - [ ] Plugin system for custom inspectors
