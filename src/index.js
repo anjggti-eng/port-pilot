@@ -3,12 +3,15 @@
 const chalk = require('chalk');
 const inquirer = require('inquirer');
 const os = require('os');
+const path = require('path');
 const { scanPorts, formatUptime } = require('./port-scanner');
 const { smartKill, isProcessRunning } = require('./smart-kill');
 const { streamProcessLogs, streamDockerLogs } = require('./log-streamer');
 const { createDashboard } = require('./ui');
 const { startSniffer } = require('./sniffer');
 const { startTunnel } = require('./tunnel');
+const { launchProject, detectProjectType } = require('./workspace');
+const { auditEnvironment } = require('./auditor');
 
 const DEV_PORTS = [3000, 3001, 3002, 3003, 3004, 3005, 4000, 4200, 5000, 5173, 5174,
   8000, 8080, 8081, 8443, 9000, 9090, 9229,
@@ -28,23 +31,23 @@ const PORT_LABELS = {
 
 function printHeader() {
   console.log(chalk.magenta.bold(`
-  ╔══════════════════════════════════════════════╗
-  ║        ⚓  PORT-PILOT v1.0                   ║
-  ║   Local Port Manager & Process Inspector     ║
-  ╚══════════════════════════════════════════════╝
+  ╔══════════════════════════════════════════════════════════════╗
+  ║              ⚓  PORT-PILOT v2.0                            ║
+  ║     The Ultimate Developer Swiss-Army Knife                 ║
+  ╚══════════════════════════════════════════════════════════════╝
   `));
-  console.log(chalk.gray(`  Platform: ${os.platform()} | Node: ${process.version}\n`));
+  console.log(chalk.gray(`  Platform: ${os.platform()} | Node: ${process.version} | Dir: ${process.cwd()}\n`));
 }
 
-async function interactiveList() {
+async function portManager() {
   printHeader();
-
   console.log(chalk.cyan('  Scanning open ports...\n'));
   const services = await scanPorts();
 
   if (services.length === 0) {
-    console.log(chalk.green('  ✨ No listening ports found. Your system is clean!\n'));
-    return;
+    console.log(chalk.green('  ✨ No listening ports found. System is clean!\n'));
+    await inquirer.prompt([{ type: 'input', name: 'any', message: 'Press Enter to continue...' }]);
+    return main();
   }
 
   console.log(chalk.green(`  Found ${services.length} listening port(s):\n`));
@@ -54,8 +57,8 @@ async function interactiveList() {
     const labelStr = label ? chalk.dim(` (${label})`) : '';
     const isDev = DEV_PORTS.includes(svc.port);
     const portColor = isDev ? chalk.green.bold : chalk.white;
-
     const memStr = svc.memoryMB ? ` ${svc.memoryMB.toFixed(1)}MB` : '';
+
     return {
       name: `  ${portColor(String(svc.port).padStart(6))} │ ${chalk.cyan(svc.processName.padEnd(18))} │ PID: ${chalk.yellow(String(svc.pid).padStart(8))} │ ${chalk.gray(svc.cwd || '')}${labelStr}${chalk.dim(memStr)}`,
       value: svc
@@ -64,7 +67,7 @@ async function interactiveList() {
 
   choices.push(new inquirer.Separator());
   choices.push({ name: `${chalk.gray('Dashboard Mode (htop-style)')}`, value: 'dashboard' });
-  choices.push({ name: `${chalk.red('Exit')}`, value: 'exit' });
+  choices.push({ name: `${chalk.gray('Back to Main Menu')}`, value: 'back' });
 
   const { selectedService } = await inquirer.prompt([{
     type: 'list',
@@ -74,14 +77,10 @@ async function interactiveList() {
     pageSize: 20
   }]);
 
-  if (selectedService === 'exit') {
-    console.log(chalk.gray('\n  Goodbye! ⚓\n'));
-    return;
-  }
-
+  if (selectedService === 'back') return main();
   if (selectedService === 'dashboard') {
     await createDashboard();
-    return;
+    return main();
   }
 
   await handleServiceAction(selectedService);
@@ -151,8 +150,7 @@ async function handleServiceAction(service) {
       break;
 
     case 'back':
-      await interactiveList();
-      return;
+      return portManager();
   }
 
   const { again } = await inquirer.prompt([{
@@ -163,16 +161,147 @@ async function handleServiceAction(service) {
   }]);
 
   if (again) {
-    await interactiveList();
+    await portManager();
   } else {
-    console.log(chalk.gray('\n  Goodbye! ⚓\n'));
+    await main();
+  }
+}
+
+async function workspaceMenu() {
+  printHeader();
+  console.log(chalk.bgBlue.white.bold('  ⚡ SMART WORKSPACE LAUNCHER  \n'));
+
+  const project = detectProjectType(process.cwd());
+
+  const typeIcons = {
+    node: '📦', python: '🐍', docker: '🐳', go: '🔵', rust: '🦀', unknown: '📁'
+  };
+
+  console.log(`  ${typeIcons[project.type] || '📁'} Detected: ${chalk.white.bold(project.type.toUpperCase())}`);
+  if (project.framework) console.log(`  ⚡ Framework: ${chalk.green.bold(project.framework)}`);
+  console.log(`  🔌 Default Port: ${chalk.yellow(project.port)}`);
+  console.log(`  🐳 Docker: ${project.hasDocker ? chalk.green('Yes') : chalk.gray('No')}`);
+  console.log(`  🔑 .env: ${project.hasEnv ? chalk.green('Found') : chalk.yellow('Missing')}`);
+  console.log();
+
+  const choices = [
+    { name: `${chalk.green.bold('🚀 Launch Project')} (Clean ports + Start)`, value: 'launch' },
+    { name: `${chalk.cyan.bold('🔍 Scan & Manage Ports')}`, value: 'ports' },
+    { name: `${chalk.yellow.bold('🛡️  Audit .env & Security')}`, value: 'audit' },
+    { name: `${chalk.magenta.bold('🕵️  HTTP Sniffer')}`, value: 'sniff' },
+    { name: `${chalk.green.bold('🌐 Public Tunnel')}`, value: 'tunnel' },
+    new inquirer.Separator(),
+    { name: `${chalk.gray('Back to Main Menu')}`, value: 'back' }
+  ];
+
+  const { choice } = await inquirer.prompt([{
+    type: 'list',
+    name: 'choice',
+    message: 'Workspace actions:',
+    choices
+  }]);
+
+  switch (choice) {
+    case 'launch':
+      const launched = await launchProject(process.cwd());
+      if (!launched) {
+        await inquirer.prompt([{ type: 'input', name: 'any', message: 'Press Enter to continue...' }]);
+        return workspaceMenu();
+      }
+      break;
+
+    case 'ports':
+      return portManager();
+
+    case 'audit':
+      auditEnvironment(process.cwd());
+      await inquirer.prompt([{ type: 'input', name: 'any', message: 'Press Enter to continue...' }]);
+      return workspaceMenu();
+
+    case 'sniff':
+      const { port: snifferPort } = await inquirer.prompt([{
+        type: 'input',
+        name: 'port',
+        message: 'Port to sniff:',
+        default: String(project.port)
+      }]);
+      startSniffer(parseInt(snifferPort));
+      break;
+
+    case 'tunnel':
+      const { port: tunnelPort } = await inquirer.prompt([{
+        type: 'input',
+        name: 'port',
+        message: 'Port to expose:',
+        default: String(project.port)
+      }]);
+      await startTunnel(parseInt(tunnelPort));
+      break;
+
+    case 'back':
+      return main();
   }
 }
 
 async function main() {
+  printHeader();
+
+  const project = detectProjectType(process.cwd());
+  const typeIcons = {
+    node: '📦', python: '🐍', docker: '🐳', go: '🔵', rust: '🦀', unknown: '📁'
+  };
+
+  console.log(`  ${typeIcons[project.type] || '📁'} Current Project: ${chalk.white.bold(project.name)} (${project.type.toUpperCase()})`);
+  if (project.framework) console.log(`  ⚡ Framework: ${chalk.green.bold(project.framework)}`);
+  console.log();
+
+  const choices = [
+    { name: `  🚀 ${chalk.bold('Workspace Launcher')} ${chalk.dim('(Detect + Launch + Manage)')}`, value: 'workspace' },
+    { name: `  🔍 ${chalk.bold('Port Manager')} ${chalk.dim('(Scan / Kill / Sniffer / Tunnel)')}`, value: 'ports' },
+    { name: `  🛡️  ${chalk.bold('Environment Auditor')} ${chalk.dim('(Check .env & Security)')}`, value: 'audit' },
+    { name: `  📊 ${chalk.bold('Dashboard Mode')} ${chalk.dim('(htop-style full screen)')}`, value: 'dashboard' },
+    new inquirer.Separator(),
+    { name: `  ❌ ${chalk.gray('Exit')}`, value: 'exit' }
+  ];
+
+  const { mainMenu } = await inquirer.prompt([{
+    type: 'list',
+    name: 'mainMenu',
+    message: 'What would you like to do?',
+    choices,
+    pageSize: 10
+  }]);
+
+  switch (mainMenu) {
+    case 'workspace':
+      return workspaceMenu();
+
+    case 'ports':
+      return portManager();
+
+    case 'audit':
+      auditEnvironment(process.cwd());
+      await inquirer.prompt([{ type: 'input', name: 'any', message: 'Press Enter to continue...' }]);
+      return main();
+
+    case 'dashboard':
+      await createDashboard();
+      return main();
+
+    case 'exit':
+      console.log(chalk.gray('\n  Goodbye! ⚓\n'));
+      process.exit(0);
+  }
+}
+
+async function cli() {
   const args = process.argv.slice(2);
 
   switch (args[0]) {
+    case 'launch':
+    case 'start':
+      return workspaceMenu();
+
     case 'dashboard':
     case 'dash':
     case 'ui':
@@ -240,6 +369,11 @@ async function main() {
       await startTunnel(parseInt(args[1]));
       break;
 
+    case 'audit':
+    case 'env':
+      auditEnvironment(process.cwd());
+      break;
+
     case 'scan':
     case 'scan-all':
       printHeader();
@@ -255,19 +389,20 @@ async function main() {
       console.log(`
   ${chalk.cyan('Commands:')}
     ${chalk.green('pp')}               Interactive menu (default)
-    ${chalk.green('pp dashboard')}     htop-style interactive dashboard
+    ${chalk.green('pp launch')}         Smart workspace launcher
     ${chalk.green('pp list')}          List all listening ports
     ${chalk.green('pp kill <PID>')}    Kill a process by PID
     ${chalk.green('pp kill <PID> -f')} Force kill (SIGKILL + tree)
     ${chalk.green('pp sniff <PORT>')}  Start HTTP traffic sniffer
     ${chalk.green('pp tunnel <PORT>')} Generate public shareable URL
+    ${chalk.green('pp audit')}         Audit .env and security
     ${chalk.green('pp scan')}          JSON output of all ports
     ${chalk.green('pp help')}          Show this help
       `);
       break;
 
     default:
-      await interactiveList();
+      await main();
       break;
   }
 }
@@ -278,7 +413,7 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-main().catch(err => {
+cli().catch(err => {
   console.error(chalk.red(`Fatal: ${err.message}`));
   process.exit(1);
 });
