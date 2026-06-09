@@ -12,6 +12,10 @@
   <img src="https://img.shields.io/badge/license-MIT-yellow" alt="License"/>
 </p>
 
+<p align="center">
+  <a href="README.md">English</a> | <a href="README.pt-br.md">Portugues</a>
+</p>
+
 ---
 
 ## Preview
