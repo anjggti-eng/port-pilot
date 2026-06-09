@@ -1,0 +1,36 @@
+{
+  "name": "port-pilot",
+  "version": "1.0.0",
+  "description": "CLI port manager - map, monitor, and kill local dev services",
+  "main": "src/index.js",
+  "bin": {
+    "pp": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "link": "npm link"
+  },
+  "keywords": [
+    "port",
+    "process",
+    "kill",
+    "docker",
+    "node",
+    "developer",
+    "cli",
+    "dashboard",
+    "monitor"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "chalk": "^4.1.2",
+    "command-exists": "^1.2.9",
+    "http-proxy": "^1.18.1",
+    "inquirer": "^8.2.5",
+    "localtunnel": "^2.0.2",
+    "ps-list": "^8.1.1",
+    "tree-kill": "^1.2.2"
+  }
+}
